@@ -177,7 +177,6 @@ void autonomous() {}
 void opcontrol() {
   auto start_time = std::chrono::steady_clock::now();
   bool flagged = false;
-  
 
   // loop forever
   while (true) {
@@ -205,11 +204,11 @@ void opcontrol() {
     }
   }
 
-  if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1) || controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) {
+  if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1) ||
+      controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) {
     clamp.toggle();
   }
 
   // delay to save resources
   pros::delay(16);
 }
-
