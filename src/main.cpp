@@ -164,7 +164,100 @@ void competition_initialize() {}
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-void autonomous() {}
+
+
+
+void intake_score(int delay, int direction) 
+{  
+  intake.move_velocity(600 * direction);
+	pros::delay(delay);
+	intake.brake();
+}
+
+void intake_on(int speed)
+{
+   if(speed == 0)
+   {
+	    intake.brake();
+      return;
+   }
+   
+   intake.move_velocity(600);
+}
+
+void intake_off()
+{
+  intake_on(0);
+}
+
+void Auton1()
+{
+   pros::delay(5000);
+   //Autonomous winpoint blue positive side / red positive side
+
+   //score on alliance stake
+
+   chassis.setPose(-60, -12, 0);
+   chassis.moveToPose(-60, 0, 0, 5000);
+   chassis.turnToHeading(90, 1000);
+   chassis.moveToPoint(-65, 0, 1000, {.forwards=false});
+   intake_score(2000, 1);
+
+   //pick up ring and score
+
+   chassis.setPose(-62, 0, 90, false);
+   intake_on(600);
+   chassis.moveToPose(-24, -48, 135, 2700, {}, false);
+   intake_off();
+
+   clamp.toggle();
+   chassis.turnToHeading(180, 2000);
+   chassis.moveToPoint(-24, -22, 5000, {.forwards=false, .maxSpeed=25}, false);
+   clamp.toggle();
+
+   pros::delay(500);
+   intake_score(1000, 1);
+
+   chassis.turnToHeading(0, 1000);
+   chassis.moveToPoint(-20, -2, 5000,  {.forwards=true, .maxSpeed=40}, false);
+}
+
+void Auton2()
+{
+
+   pros::delay(5000);
+   //Autonomous winpoint blue negative side / red negative side
+
+   //score on alliance stake
+
+   chassis.setPose(-60, 24, 180);
+   chassis.moveToPose(-60, 0, 180, 5000);
+   chassis.turnToHeading(90, 1000);
+   chassis.moveToPoint(-65, 0, 1000, {.forwards=false});
+   intake_score(2000, 1);
+
+   //pick up ring and score
+
+   chassis.setPose(-62, 0, 90, false);
+   intake_on(600);
+   chassis.moveToPose(-24, 48, 45, 2700, {}, false);
+   intake_off();
+
+   clamp.toggle();
+   chassis.turnToHeading(0, 2000);
+   chassis.moveToPoint(-24, 22, 5000, {.forwards=false, .maxSpeed=25}, false);
+   clamp.toggle();
+
+   pros::delay(500);
+   intake_score(1000, 1);
+
+   chassis.turnToHeading(180, 1000);
+   chassis.moveToPoint(-20, 2, 5000,  {.forwards=true}, false);
+}
+
+void autonomous() {
+  Auton1();
+}
 
 /**
  * Runs the operator control code. This function will be started in its own task
@@ -184,7 +277,7 @@ void opcontrol() {
   bool flagged = false;
   lady_brown.move_absolute(0, 200);
   intake.move_velocity(0);
-  enum LadyBrownState { IDLE, PRIMED, SCORING };
+  enum LadyBrownState { IDLE, PRIMED, SCORING, SCORED };
 
   // Static variable to track current state
   static LadyBrownState ladyBrownState = IDLE;
@@ -233,15 +326,14 @@ void opcontrol() {
         ladyBrownState = SCORING;
         break;
 
-      case SCORING:
-        lady_brown.move_absolute(0, 200); // Move to scoring position
-        ladyBrownState = IDLE;             // Reset state
+      case SCORING: 
+        lady_brown.move_absolute(390, 75); // Move to scoring position
+        ladyBrownState = SCORED;             // Reset state
         break;
-      }
 
       case SCORED:
         lady_brown.move_absolute(0, 200); // Move to scoring position
-        ladyBrownState = IDLE;             // Reset state
+        ladyBrownState = IDLE;
         break;
       }
     }
