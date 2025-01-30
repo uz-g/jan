@@ -1,18 +1,20 @@
 #include "main.h"
+#include "api.h"
 #include "lemlib/api.hpp"
-#include "lemlib/chassis/trackingWheel.hpp"
-#include "pros/imu.hpp"
-#include "pros/motor_group.hpp"
+#include "main.h"
+#include "pros/motors.h"
+#include "pros/rtos.hpp"
 
 using namespace lemlib;
 
-pros::MotorGroup dt_left({1, 2, 3});  // left motors on ports 1, 2, 3
-pros::MotorGroup dt_right({4, 5, 6}); // right motors on ports 4, 5, 6
-pros::MotorGroup lady_brown({7, 8});  // intake motors on ports 7, 8
-pros::Motor intake(9);                // intake motor on port 9
+pros::MotorGroup dt_left({-5, 11, -16}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);
+pros::MotorGroup dt_right({-4, 3, 1}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);
+
+pros::MotorGroup lady_brown({10, -21}, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees);
+pros::Motor intake(12);                  // intake motor on port 9
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
-pros::Imu imu(10);
+pros::Imu imu(2);
 
 int intakeSpeed = 200;
 
@@ -105,6 +107,8 @@ void on_center_button() {
 void initialize() {
   pros::lcd::initialize(); // initialize brain screen
   chassis.calibrate();     // calibrate sensors
+  chassis.setPose(0, 0, 0);
+  lady_brown.set_zero_position_all(0);
 
   // the default rate is 50. however, if you need to change the rate, you
   // can do the following.
@@ -177,6 +181,12 @@ void autonomous() {}
 void opcontrol() {
   auto start_time = std::chrono::steady_clock::now();
   bool flagged = false;
+  lady_brown.move_absolute(0, 200);
+  intake.move_velocity(0);
+  enum LadyBrownState { IDLE, PRIMED, SCORING };
+
+  // Static variable to track current state
+  static LadyBrownState ladyBrownState = IDLE;
 
   // loop forever
   while (true) {
@@ -195,6 +205,7 @@ void opcontrol() {
 
     // move the robot
     chassis.tank(leftY, rightY);
+
     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
       intake.move_velocity(intakeSpeed);
     } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
@@ -202,13 +213,39 @@ void opcontrol() {
     } else {
       intake.brake();
     }
+    if (
+        controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) {
+      clamp.toggle();
+    }
+
+    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
+      switch (ladyBrownState) {
+      case IDLE:
+        lady_brown.move_absolute(70, 200); // Move to primed position
+        intake.move_velocity(intakeSpeed); // Start intake
+        ladyBrownState = PRIMED;
+        break;
+
+      case PRIMED:
+        lady_brown.move_absolute(350, 200); // Maintain primed position
+        intake.move_velocity(0);           // Stop intake
+        ladyBrownState = SCORING;
+        break;
+
+      case SCORING:
+        lady_brown.move_absolute(0, 200); // Move to scoring position
+        ladyBrownState = IDLE;             // Reset state
+        break;
+      }
+    }
+
+    pros::delay(20);
   }
 
-  if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1) ||
-      controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) {
-    clamp.toggle();
-  }
+  // lady brown control logic, pushing the button once will move it to primed
+  // postion in degrees then run the intake motor until the button is pressed
+  // again then the motor will stop then pushing the button [r1] will move the
+  // lady brown to the scored position in degrees
 
   // delay to save resources
-  pros::delay(16);
 }
