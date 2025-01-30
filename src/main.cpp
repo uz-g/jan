@@ -126,6 +126,7 @@ void initialize() {
       pros::lcd::print(0, "X: %f", chassis.getPose().x);         // x
       pros::lcd::print(1, "Y: %f", chassis.getPose().y);         // y
       pros::lcd::print(2, "Theta: %f", chassis.getPose().theta); // heading
+      pros::lcd::print(3, "LB Deg: %f", lady_brown.get_position());
       // log position telemetry
       lemlib::telemetrySink()->info("Chassis pose: {}", chassis.getPose());
       // delay to save resources
@@ -221,18 +222,24 @@ void opcontrol() {
     if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
       switch (ladyBrownState) {
       case IDLE:
-        lady_brown.move_absolute(70, 200); // Move to primed position
+        lady_brown.move_absolute(66, 200); // Move to primed position
         intake.move_velocity(intakeSpeed); // Start intake
         ladyBrownState = PRIMED;
         break;
 
       case PRIMED:
-        lady_brown.move_absolute(350, 200); // Maintain primed position
+        lady_brown.move_absolute(350, 100); // Maintain primed position
         intake.move_velocity(0);           // Stop intake
         ladyBrownState = SCORING;
         break;
 
       case SCORING:
+        lady_brown.move_absolute(0, 200); // Move to scoring position
+        ladyBrownState = IDLE;             // Reset state
+        break;
+      }
+
+      case SCORED:
         lady_brown.move_absolute(0, 200); // Move to scoring position
         ladyBrownState = IDLE;             // Reset state
         break;
