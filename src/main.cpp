@@ -7,8 +7,8 @@
 
 using namespace lemlib;
 
-pros::MotorGroup dt_left({-12, 11, -16}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);
-pros::MotorGroup dt_right({-4, 3, 1}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);
+pros::MotorGroup dt_left({-4, 2, -13}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);
+pros::MotorGroup dt_right({1, -3, 15}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);
 
 pros::MotorGroup lady_brown({10, -21}, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees);
 pros::Motor intake(12);                  // intake motor on port 9
@@ -140,7 +140,14 @@ void initialize() {
  * the VEX Competition Switch, following either autonomous or opcontrol. When
  * the robot is enabled, this task will exit.
  */
-void disabled() {}
+void disabled() {
+  //unclamp
+  clamp.retract();
+  dt_left.move_velocity(0);
+  dt_right.move_velocity(0);
+  intake.move_velocity(0);
+  lady_brown.move_velocity(0);
+}
 
 /**
  * Runs after initialize(), and before autonomous when connected to the Field
