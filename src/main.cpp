@@ -7,7 +7,7 @@
 
 using namespace lemlib;
 
-pros::MotorGroup dt_left({-5, 11, -16}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);
+pros::MotorGroup dt_left({-12, 11, -16}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);
 pros::MotorGroup dt_right({-4, 3, 1}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);
 
 pros::MotorGroup lady_brown({10, -21}, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees);
