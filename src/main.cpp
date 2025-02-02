@@ -12,7 +12,7 @@ pros::MotorGroup dt_left({-4, 2, -13}, pros::v5::MotorGears::blue, pros::v5::Mot
 pros::MotorGroup dt_right({1, -3, 15}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);
 
 pros::MotorGroup lady_brown({10, -20}, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees);
-pros::MotorGroup intake({21,7}, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees);                  // intake motor on port 9
+pros::MotorGroup intake({21,6}, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees);                  // intake motor on port 9
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 pros::Imu imu(12);
@@ -264,11 +264,7 @@ void Auton2()
 }
 
 void autonomous() {
-  chassis.setPose(0,0,0);
-  chassis.moveToPose(-10, 0, 0, 1000);
-  lady_brown.move_absolute(390, 200);
-  pros::delay(1000);
-  lady_brown.move_absolute(0, 200);
+  Auton2();
 }
 
 /**
