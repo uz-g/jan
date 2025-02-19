@@ -2,22 +2,20 @@
 #include "api.h"
 #include "lemlib/api.hpp"
 #include "main.h"
-#include "pros/abstract_motor.hpp"
-#include "pros/motors.h"
-#include "pros/rtos.hpp"
+#include "liblvgl/lvgl.h"
 
 using namespace lemlib;
 
 pros::MotorGroup dt_left({-4, 2, -13}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);
 pros::MotorGroup dt_right({1, -3, 15}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);
 
-pros::MotorGroup lady_brown({10, -20}, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees);
-pros::MotorGroup intake({21,6}, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees);                  // intake motor on port 9
+pros::Motor lady_brown(10, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees);
+pros::MotorGroup intake({21,6}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);                  // intake motor on port 9
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 pros::Imu imu(12);
 
-int intakeSpeed = 200;
+int intakeSpeed = 600;
 
 pros::adi::Pneumatics clamp('H', false);
 
@@ -55,13 +53,17 @@ lemlib::ControllerSettings
                       0    // maximum acceleration (slew)
     );
 
-// sensors for odometry
+// Create a new rotation sensor on port 11 (adjust the port number as needed)
+pros::Rotation horizontalRotation(11);
+
+// Create a new horizontal tracking wheel using the rotation sensor
+lemlib::TrackingWheel horizontal1(&horizontalRotation, lemlib::Omniwheel::NEW_2, 0);
+
+// Update the OdomSensors object to include the new horizontal tracking wheel
 lemlib::OdomSensors sensors(nullptr, // vertical tracking wheel
-                            nullptr, // vertical tracking wheel 2, set to
-                                     // nullptr as we don't have a second one
-                            nullptr, // horizontal tracking wheel
-                            nullptr, // horizontal tracking wheel 2, set to
-                                     // nullptr as we don't have a second one
+                            nullptr, // vertical tracking wheel 2, set to nullptr as we don't have a second one
+                            &horizontal1, // horizontal tracking wheel
+                            nullptr, // horizontal tracking wheel 2, set to nullptr as we don't have a second one
                             &imu     // inertial sensor
 );
 
@@ -346,7 +348,7 @@ void opcontrol() {
       }
     }
 
-    pros::delay(20);
+    pros::delay(15);
   }
 
   // lady brown control logic, pushing the button once will move it to primed
