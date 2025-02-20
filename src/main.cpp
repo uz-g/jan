@@ -79,6 +79,17 @@ lemlib::OdomSensors sensors(&vertical_tracking_wheel, // vertical tracking wheel
                             &horizontal_tracking_wheel, // horizontal tracking wheel
                             nullptr, // horizontal tracking wheel 2, set to
                                      // nullptr as we don't have a second one
+// Create a new rotation sensor on port 11 (adjust the port number as needed)
+pros::Rotation horizontalRotation(11);
+
+// Create a new horizontal tracking wheel using the rotation sensor .5 inches behind and 1 inch to the left of tracking center
+lemlib::TrackingWheel horizontal1(&horizontalRotation, lemlib::Omniwheel::NEW_2, 0.5);
+
+// Update the OdomSensors object to include the new horizontal tracking wheel
+lemlib::OdomSensors sensors(nullptr, // vertical tracking wheel
+                            nullptr, // vertical tracking wheel 2, set to nullptr as we don't have a second one
+                            &horizontal1, // horizontal tracking wheel
+                            nullptr, // horizontal tracking wheel 2, set to nullptr as we don't have a second one
                             &imu     // inertial sensor
 );
 
