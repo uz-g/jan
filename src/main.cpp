@@ -3,21 +3,23 @@
 #include "lemlib/api.hpp"
 #include "main.h"
 #include "liblvgl/lvgl.h"
+#include "pros/motors.hpp"
 
 using namespace lemlib;
 
-pros::MotorGroup dt_left({-4, 2, -13}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);
-pros::MotorGroup dt_right({1, -3, 15}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);
+pros::MotorGroup dt_left({-5, 2, -9}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);
+pros::MotorGroup dt_right({1, -6, 19}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);
 
-pros::Motor lady_brown(10, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees);
-pros::MotorGroup intake({21,6}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);                  // intake motor on port 9
-pros::Controller controller(pros::E_CONTROLLER_MASTER);
+pros::Motor lady_brown(14, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees);
+pros::MotorGroup intake({11,20}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees); 
+pros::Motor preroller(20, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees);               // intake motor on port 9
+pros::Controller controller(pros::E_CONTROLLER_MASTER);;
 
-pros::Imu imu(12);
+pros::Imu imu(8);
 
 int intakeSpeed = 600;
 
-pros::adi::Pneumatics clamp('H', false);
+pros::adi::Pneumatics clamp('A', false);
 
 lemlib::Drivetrain drivetrain(
     &dt_left,  // left motor group
@@ -54,7 +56,7 @@ lemlib::ControllerSettings
     );
 
 // Create a new rotation sensor on port 11 (adjust the port number as needed)
-pros::Rotation horizontalRotation(11);
+pros::Rotation horizontalRotation(10);
 
 // Create a new horizontal tracking wheel using the rotation sensor .5 inches behind and 1 inch to the left of tracking center
 lemlib::TrackingWheel horizontal1(&horizontalRotation, lemlib::Omniwheel::NEW_2, 0.5);
@@ -399,6 +401,36 @@ void Auton5()
    //Step 10. We will go to the center bar and hang
    chassis.moveToPose(-25, -40, 45, 5000, {.forwards=true}, false);
    //TODO: TOGGLE HANG MECHANISM
+}
+
+void skillsAuto(){
+  chassis.setPose(-62,0,0); //starting position infront of red stake
+  lady_brown.move_absolute(120, 200); //score allliance stake
+  lady_brown.move_absolute(0, 60);
+  chassis.moveToPose(-53,20,30, 2000, {.forwards=false}, false);
+  clamp.extend(); //clamp goal
+  intake.move_velocity(200);
+  chassis.moveToPose(-59,45,90, 2000, {.forwards=true}, false);
+  chassis.moveToPose(-49,47,0, 2000, {.forwards=true}, false);
+  chassis.moveToPose(-47,57,90, 2000, {.forwards=true}, false);
+  intake.move_velocity(0);
+  chassis.moveToPose(-66,65,135, 2000, {.forwards=false}, false); //pick up 3 rings and drop off goal
+  clamp.retract();
+  chassis.moveToPose(-47,-20,90, 2000, {.forwards=false}, false);
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
 }
 
 void autonomous() {
