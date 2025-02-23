@@ -572,8 +572,6 @@ void autonomous() {
  * task, not resume it from where it left off.
  */
 void opcontrol() {
-  std::cout << "Why is this executed";
-  autonomous();
   chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
   auto start_time = std::chrono::steady_clock::now();
   bool flagged = false;
