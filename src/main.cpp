@@ -414,7 +414,7 @@ void Auton5() {
   chassis.moveToPose(-25, -40, 45, 5000, {.forwards = true}, false);
   // TODO: TOGGLE HANG MECHANISM
 }
-/**
+
 void skillsAuto() {
   chassis.setPose(-60, 0, 90, false); // starting position infront of red stake
   chassis.moveToPoint(-46, 0, 1000);
@@ -443,7 +443,7 @@ void skillsAuto() {
   // false); pros::delay(500); chassis.moveToPoint(-46, -17, 1000,
   // {.forwards=false}, false); clamp.extend(); pros::delay(500);
 }
-**/
+
 void x() {
   chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
   chassis.setPose(0, 0, 0);
@@ -577,7 +577,7 @@ void opcontrol() {
   bool flagged = false;
   lady_brown.move_absolute(0, 200);
   intake.move_velocity(0);
-  enum LadyBrownState { IDLE, PRIMED, SCORING, SCORED };
+  enum LadyBrownState { IDLE, PRIMED, SCORED };
 
   // Static variable to track current state
   static LadyBrownState ladyBrownState = IDLE;
@@ -620,18 +620,13 @@ void opcontrol() {
         break;
 
       case PRIMED:
-        lady_brown.move_absolute(350, 100); // Maintain primed position
+        lady_brown.move_absolute(370, 100); // Maintain primed position
         intake.move_velocity(0);            // Stop intake
-        ladyBrownState = SCORING;
-        break;
-
-      case SCORING:
-        lady_brown.move_absolute(390, 75); // Move to scoring position
-        ladyBrownState = SCORED;           // Reset state
+        ladyBrownState = SCORED;
         break;
 
       case SCORED:
-        lady_brown.move_absolute(0, 200); // Move to scoring position
+        lady_brown.move_absolute(420, 80); // Move to scoring position
         ladyBrownState = IDLE;
         break;
       }
