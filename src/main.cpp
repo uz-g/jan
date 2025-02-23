@@ -41,15 +41,15 @@ lemlib::Drivetrain drivetrain(
 );
 
 lemlib::ControllerSettings
-    linearController(6, // proportional gain (kP) 27
-                     0, // integral gain (kI)
-                     8, // derivative gain (kD) 320
-                     0, // anti windup
-                     0, // small error range, in inches
-                     0, // small error range timeout, in milliseconds
-                     0, // large error range, in inches
-                     0, // large error range timeout, in milliseconds
-                     0  // maximum acceleration (slew)
+    linearController(6,   // proportional gain (kP) 27
+                     0,   // integral gain (kI)
+                     8,   // derivative gain (kD) 320
+                     3,   // anti windup
+                     1,   // small error range, in inches
+                     100, // small error range timeout, in milliseconds
+                     3,   // large error range, in inches
+                     500, // large error range timeout, in milliseconds
+                     40   // maximum acceleration (slew)
     );
 
 // angular motion controller
@@ -192,7 +192,7 @@ void competition_initialize() {}
  */
 
 void intake_score(int degrees, int direction) {
-  intake.move_relative(degrees, 600*direction);
+  intake.move_relative(degrees, 600 * direction);
   intake.brake();
 }
 
@@ -413,33 +413,41 @@ void Auton5() {
   // TODO: TOGGLE HANG MECHANISM
 }
 
-void skillsAuto() {
-  chassis.setPose(-60, 0, 90, false); // starting position infront of red stake
-  chassis.moveToPoint(-46, 0, 1000);
-  chassis.moveToPoint(-46, 10, 900, {.forwards = false}, false);
-  chassis.moveToPoint(-46, 17, 1000, {.forwards = false}, false);
+void match1() {
+
+  chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+  chassis.setPose(-62.4, 40.5, 270);
+  chassis.moveToPoint(-45, 40.5, 1000);
+  chassis.turnToPoint(-31.8, 29.4, 1000, {.forwards = false}, false);
+  chassis.moveToPoint(-31.8, 29.4, 1000, {.forwards = false}, false);
+
   clamp.extend();
-  pros::delay(500);
 
-  chassis.turnToHeading(0, 2000, {.earlyExitRange = .1});
+  chassis.turnToPoint(-23.3, 48.8, 1000, {}, false);
   intake.move_velocity(600);
-  chassis.moveToPoint(-46.5, 60, 5000, {.maxSpeed = 40}, false);
-  chassis.turnToHeading(90, 2000, {.earlyExitRange = .1}, false);
-  chassis.moveToPoint(-60, 60, 2000, {.forwards = false}, false);
-  clamp.retract();
-  intake.brake();
+  chassis.moveToPoint(-20.3, 50.8, 1000, {.maxSpeed = 50}, false);
 
-  chassis.turnToHeading(120, 200);
-  chassis.turnToHeading(90, 500);
+  chassis.turnToPoint(-67.1, 67, 1000);
+  chassis.moveToPoint(-67.1, 67, 1000);
 
-  chassis.moveToPose(-47, -16, 180, 2500, {.forwards = false});
+  pros::delay(3000);
 
-  // chassis.moveToPoint(-46.5, 60, 2000, {.forwards=true}, false);
-  // chassis.turnToHeading(0, 2000);
+  chassis.moveToPose(-49, -23, 180, 3000);
+}
 
-  // chassis.moveToPoint(-46, -10, 1000, {.forwards=false, .maxSpeed=60},
-  // false); pros::delay(500); chassis.moveToPoint(-46, -17, 1000,
-  // {.forwards=false}, false); clamp.extend(); pros::delay(500);
+void match2() {
+  //red neg
+
+  chassis.setPose(0, 0, 0, false);
+  chassis.moveToPose(0, -36, 0, 2700, {.forwards = false, .maxSpeed = 70},
+                     false);
+  clamp.extend();
+  intake.move_velocity(600);
+
+  pros::delay(6000);
+
+  chassis.turnToHeading(90, 1000);
+  chassis.moveToPoint(0, 40, 1000);
 }
 
 void x() {
@@ -461,85 +469,87 @@ void x() {
   chassis.moveToPoint(24, 36.75, 1000, {}, false);
 
   chassis.turnToPoint(48, 36.75, 850, {}, false);
-  chassis.moveToPoint(48, 36.75, 1000, {.maxSpeed=40}, false);
+  chassis.moveToPoint(48, 36.75, 1000, {.maxSpeed = 40}, false);
   pros::delay(750);
 
-  chassis.turnToPoint(45, 10, 850, {.maxSpeed=40}, false);
+  chassis.turnToPoint(45, 10, 850, {.maxSpeed = 40}, false);
   pros::delay(1000);
-  chassis.moveToPoint(45, 10, 1000, {.maxSpeed=40}, false);
+  chassis.moveToPoint(45, 10, 1000, {.maxSpeed = 40}, false);
 
   pros::delay(2000);
-  chassis.moveToPoint(45,6,2000,{.maxSpeed=40},false);
+  chassis.moveToPoint(45, 6, 2000, {.maxSpeed = 40}, false);
   pros::delay(1000);
-  chassis.turnToPoint(54.5, 6, 850, {.forwards=false,.maxSpeed=40}, false);
+  chassis.turnToPoint(54.5, 6, 850, {.forwards = false, .maxSpeed = 40}, false);
   pros::delay(1000);
-  chassis.moveToPoint(54.5, 1.5, 1000, {.forwards=false,.maxSpeed=40}, true);
+  chassis.moveToPoint(54.5, 1.5, 1000, {.forwards = false, .maxSpeed = 40},
+                      true);
   intake.move_voltage(-12000);
   pros::delay(200); // Move at max voltage for 1 second
   intake.move_voltage(0);
   pros::delay(500);
   clamp.retract();
   intake.move_velocity(600);
-  chassis.moveToPoint(-29,13,4000,{.forwards=false,.maxSpeed=50,.earlyExitRange=2},false);
+  chassis.moveToPoint(-29, 13, 4000,
+                      {.forwards = false, .maxSpeed = 50, .earlyExitRange = 2},
+                      false);
   clamp.extend();
   intake.move_voltage(-12000);
   pros::delay(200); // Move at max voltage for 1 second
   intake.move_voltage(0);
   pros::delay(500);
   intake.move_velocity(600);
-  chassis.turnToPoint(-29.8,37,1000,{},false);
+  chassis.turnToPoint(-29.8, 37, 1000, {}, false);
   pros::delay(1000);
-  chassis.moveToPoint(-29.8,37,1000,{.maxSpeed=50},false);
+  chassis.moveToPoint(-29.8, 37, 1000, {.maxSpeed = 50}, false);
   pros::delay(1000);
-  chassis.turnToPoint(-53.8,37,1000,{},false);
+  chassis.turnToPoint(-53.8, 37, 1000, {}, false);
   pros::delay(1000);
-  chassis.moveToPoint(-53.8,37,1000,{.maxSpeed=50},false);
+  chassis.moveToPoint(-53.8, 37, 1000, {.maxSpeed = 50}, false);
   pros::delay(1000);
-  chassis.moveToPoint(-53.8,5,1000,{.maxSpeed=50},false);
+  chassis.moveToPoint(-53.8, 5, 1000, {.maxSpeed = 50}, false);
   pros::delay(1000);
-  chassis.turnToPoint(-50.5,6,1000,{},true);
-  chassis.moveToPoint(-50.5,6,1000,{.maxSpeed=50},true);
+  chassis.turnToPoint(-50.5, 6, 1000, {}, true);
+  chassis.moveToPoint(-50.5, 6, 1000, {.maxSpeed = 50}, true);
   pros::delay(1000);
-  chassis.turnToPoint(-39.5,7,1000,{},true);
-  chassis.moveToPoint(-39.5,7,1000,{.maxSpeed=50},false);
-  chassis.turnToPoint(-67,0,1000,{.forwards=false},false);
-  chassis.moveToPoint(-67,0,1000,{.forwards=false,.maxSpeed=50},false);
+  chassis.turnToPoint(-39.5, 7, 1000, {}, true);
+  chassis.moveToPoint(-39.5, 7, 1000, {.maxSpeed = 50}, false);
+  chassis.turnToPoint(-67, 0, 1000, {.forwards = false}, false);
+  chassis.moveToPoint(-67, 0, 1000, {.forwards = false, .maxSpeed = 50}, false);
   clamp.retract();
   intake.move_voltage(-12000);
   pros::delay(200); // Move at max voltage for 1 second
   intake.move_voltage(0);
   pros::delay(500);
-  chassis.turnToPoint(-3,62,3000,{.forwards=true,.maxSpeed=90},false);
+  chassis.turnToPoint(-3, 62, 3000, {.forwards = true, .maxSpeed = 90}, false);
   pros::delay(1000);
-  chassis.moveToPoint(-3,62,2000,{.forwards=true,.maxSpeed=70},false);
+  chassis.moveToPoint(-3, 62, 2000, {.forwards = true, .maxSpeed = 70}, false);
   // tune this delay
   intake.move_voltage(12000);
   pros::delay(600); // Move at max voltage for 1 second
   intake.move_voltage(0);
   pros::delay(500);
-  chassis.moveToPoint(45,104,3000,{.forwards=true,.maxSpeed=70},false);
+  chassis.moveToPoint(45, 104, 3000, {.forwards = true, .maxSpeed = 70}, false);
   pros::delay(1000);
-  chassis.turnToPoint(-25,108,5000,{.forwards=false},false);
-  chassis.moveToPoint(-25,108,5000,{.forwards=false,.maxSpeed=70},false);
+  chassis.turnToPoint(-25, 108, 5000, {.forwards = false}, false);
+  chassis.moveToPoint(-25, 108, 5000, {.forwards = false, .maxSpeed = 70},
+                      false);
   clamp.extend();
   intake.move_velocity(600);
-  chassis.moveToPoint(-64.5,131.1,2000,{.forwards=false},false);
-  chassis.moveToPoint(-55,120,500,{.forwards=true},false);
-  chassis.moveToPoint(-64.5,131.1,700,{.forwards=false},false);
+  chassis.moveToPoint(-64.5, 131.1, 2000, {.forwards = false}, false);
+  chassis.moveToPoint(-55, 120, 500, {.forwards = true}, false);
+  chassis.moveToPoint(-64.5, 131.1, 700, {.forwards = false}, false);
   clamp.retract();
   intake.move_voltage(-12000);
   pros::delay(200); // Move at max voltage for 1 second
   intake.move_voltage(0);
-  chassis.moveToPoint(0,120,2000,{.forwards=true},false);
-  chassis.moveToPoint(-64.5,131.1,700,{.forwards=true},false);
-
- 
+  chassis.moveToPoint(0, 120, 2000, {.forwards = true}, false);
+  chassis.moveToPoint(-64.5, 131.1, 700, {.forwards = true}, false);
 }
 
-void autonomous() { 
+void autonomous() {
   // x();
-  Auton3(); 
-  }
+  match2();
+}
 
 /**
  * Runs the operator control code. This function will be started in its own task
@@ -603,7 +613,7 @@ void opcontrol() {
         break;
 
       case PRIMED:
-        lady_brown.move_absolute(420, 100); // Maintain primed position
+        lady_brown.move_absolute(460, 100); // Maintain primed position
         intake.move_velocity(0);            // Stop intake
         ladyBrownState = SCORED;
         break;
