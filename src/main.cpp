@@ -1,19 +1,28 @@
 #include "main.h"
 #include "api.h"
 #include "lemlib/api.hpp"
-#include "main.h"
+#include "lemlib/chassis/chassis.hpp"
 #include "liblvgl/lvgl.h"
+#include "main.h"
+#include "pros/motors.h"
 #include "pros/motors.hpp"
+#include "pros/rtos.hpp"
 
 using namespace lemlib;
 
-pros::MotorGroup dt_left({-5, 2, -9}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);
-pros::MotorGroup dt_right({1, -6, 19}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees);
+pros::MotorGroup dt_left({-5, 2, -9}, pros::v5::MotorGears::blue,
+                         pros::v5::MotorUnits::degrees);
+pros::MotorGroup dt_right({1, -6, 19}, pros::v5::MotorGears::blue,
+                          pros::v5::MotorUnits::degrees);
 
-pros::Motor lady_brown(14, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees);
-pros::MotorGroup intake({11,20}, pros::v5::MotorGears::blue, pros::v5::MotorUnits::degrees); 
-pros::Motor preroller(20, pros::v5::MotorGears::green, pros::v5::MotorUnits::degrees);               // intake motor on port 9
-pros::Controller controller(pros::E_CONTROLLER_MASTER);;
+pros::Motor lady_brown(14, pros::v5::MotorGears::green,
+                       pros::v5::MotorUnits::degrees);
+pros::MotorGroup intake({11, 20}, pros::v5::MotorGears::blue,
+                        pros::v5::MotorUnits::degrees);
+pros::Motor preroller(20, pros::v5::MotorGears::green,
+                      pros::v5::MotorUnits::degrees); // intake motor on port 9
+pros::Controller controller(pros::E_CONTROLLER_MASTER);
+;
 
 pros::Imu imu(8);
 
@@ -31,22 +40,22 @@ lemlib::Drivetrain drivetrain(
 );
 
 lemlib::ControllerSettings
-    linearController(10,  // proportional gain (kP)
-                     0,   // integral gain (kI)
-                     3,   // derivative gain (kD)
-                     3,   // anti windup
-                     1,   // small error range, in inches
-                     100, // small error range timeout, in milliseconds
-                     3,   // large error range, in inches
-                     500, // large error range timeout, in milliseconds
-                     20   // maximum acceleration (slew)
+    linearController(6, // proportional gain (kP) 27
+                     0, // integral gain (kI)
+                     8, // derivative gain (kD) 320
+                     0, // anti windup
+                     0, // small error range, in inches
+                     0, // small error range timeout, in milliseconds
+                     0, // large error range, in inches
+                     0, // large error range timeout, in milliseconds
+                     0  // maximum acceleration (slew)
     );
 
 // angular motion controller
 lemlib::ControllerSettings
-    angularController(2,   // proportional gain (kP)
+    angularController(2.1, // proportional gain (kP)
                       0,   // integral gain (kI)
-                      10,  // derivative gain (kD)
+                      14,  // derivative gain (kD)
                       3,   // anti windup
                       1,   // small error range, in degrees
                       100, // small error range timeout, in milliseconds
@@ -58,14 +67,18 @@ lemlib::ControllerSettings
 // Create a new rotation sensor on port 11 (adjust the port number as needed)
 pros::Rotation horizontalRotation(10);
 
-// Create a new horizontal tracking wheel using the rotation sensor .5 inches behind and 1 inch to the left of tracking center
-lemlib::TrackingWheel horizontal1(&horizontalRotation, lemlib::Omniwheel::NEW_2, 0.5);
+// Create a new horizontal tracking wheel using the rotation sensor .5 inches
+// behind and 1 inch to the left of tracking center
+lemlib::TrackingWheel horizontal1(&horizontalRotation, lemlib::Omniwheel::NEW_2,
+                                  0.5);
 
 // Update the OdomSensors object to include the new horizontal tracking wheel
 lemlib::OdomSensors sensors(nullptr, // vertical tracking wheel
-                            nullptr, // vertical tracking wheel 2, set to nullptr as we don't have a second one
-                            &horizontal1, // horizontal tracking wheel
-                            nullptr, // horizontal tracking wheel 2, set to nullptr as we don't have a second one
+                            nullptr, // vertical tracking wheel 2, set to
+                                     // nullptr as we don't have a second one
+                            nullptr, // horizontal tracking wheel
+                            nullptr, // horizontal tracking wheel 2, set to
+                                     // nullptr as we don't have a second one
                             &imu     // inertial sensor
 );
 
@@ -146,7 +159,7 @@ void initialize() {
  * the robot is enabled, this task will exit.
  */
 void disabled() {
-  //unclamp
+  // unclamp
   clamp.retract();
   dt_left.move_velocity(0);
   dt_right.move_velocity(0);
@@ -177,265 +190,299 @@ void competition_initialize() {}
  * from where it left off.
  */
 
-
-
-void intake_score(int delay, int direction) 
-{  
+void intake_score(int delay, int direction) {
   intake.move_velocity(600 * direction);
-	pros::delay(delay);
-	intake.brake();
+  pros::delay(delay);
+  intake.brake();
 }
 
-void intake_on(int speed)
-{
-   if(speed == 0)
-   {
-	    intake.brake();
-      return;
-   }
-   
-   intake.move_velocity(600);
+void intake_on(int speed) {
+  if (speed == 0) {
+    intake.brake();
+    return;
+  }
+
+  intake.move_velocity(600);
 }
 
-void intake_off()
-{
-  intake_on(0);
-}
+void intake_off() { intake_on(0); }
 
-void Auton1()
-{
-   pros::delay(5000);
-   //Autonomous winpoint blue positive side / red positive side
+void Auton1() {
+  pros::delay(5000);
+  // Autonomous winpoint blue positive side / red positive side
 
-   //score on alliance stake
+  // score on alliance stake
 
-   chassis.setPose(-60, -12, 0);
-   chassis.moveToPose(-60, 0, 0, 5000);
-   chassis.turnToHeading(90, 1000);
-   chassis.moveToPoint(-65, 0, 1000, {.forwards=false});
-   intake_score(2000, 1);
+  chassis.setPose(-60, -12, 0);
+  chassis.moveToPose(-60, 0, 0, 5000);
+  chassis.turnToHeading(90, 1000);
+  chassis.moveToPoint(-65, 0, 1000, {.forwards = false});
+  intake_score(2000, 1);
 
-   //pick up ring and score
+  // pick up ring and score
 
-   chassis.setPose(-62, 0, 90, false);
-   intake_on(600);
-   chassis.moveToPose(-24, -48, 135, 2700, {}, false);
-   intake_off();
+  chassis.setPose(-62, 0, 90, false);
+  intake_on(600);
+  chassis.moveToPose(-24, -48, 135, 2700, {}, false);
+  intake_off();
 
-   clamp.toggle();
-   chassis.turnToHeading(180, 2000);
-   chassis.moveToPoint(-24, -22, 5000, {.forwards=false, .maxSpeed=25}, false);
-   clamp.toggle();
-
-   pros::delay(500);
-   intake_score(1000, 1);
-
-   chassis.turnToHeading(0, 1000);
-   chassis.moveToPoint(-20, -2, 5000,  {.forwards=true, .maxSpeed=40}, false);
-}
-
-void Auton2()
-{
-
-   pros::delay(5000);
-   //Autonomous winpoint blue negative side / red negative side
-
-   //score on alliance stake
-
-   chassis.setPose(-60, 24, 180);
-   chassis.moveToPose(-60, 0, 180, 5000);
-   chassis.turnToHeading(90, 1000);
-   chassis.moveToPoint(-65, 0, 1000, {.forwards=false});
-   intake_score(2000, 1);
-
-   //pick up ring and score
-
-   chassis.setPose(-62, 0, 90, false);
-   intake_on(600);
-   chassis.moveToPose(-24, 48, 45, 2700, {}, false);
-   intake_off();
-
-   clamp.toggle();
-   chassis.turnToHeading(0, 2000);
-   chassis.moveToPoint(-24, 22, 5000, {.forwards=false, .maxSpeed=25}, false);
-   clamp.toggle();
-
-   pros::delay(500);
-   intake_score(1000, 1);
-
-   chassis.turnToHeading(180, 1000);
-   chassis.moveToPoint(-20, 2, 5000,  {.forwards=true}, false);
-}
-
-void Auton3() {  
-  chassis.setPose(0, 0, 0, false);
-  chassis.moveToPose(0, -35, 0, 2700, {.forwards = false, .maxSpeed = 30}, false);
   clamp.toggle();
-  intake_score(1000,1);
+  chassis.turnToHeading(180, 2000);
+  chassis.moveToPoint(-24, -22, 5000, {.forwards = false, .maxSpeed = 25},
+                      false);
+  clamp.toggle();
+
+  pros::delay(500);
+  intake_score(1000, 1);
+
+  chassis.turnToHeading(0, 1000);
+  chassis.moveToPoint(-20, -2, 5000, {.forwards = true, .maxSpeed = 40}, false);
 }
 
-void Auton5()
-{
-   //Skills challenge autonomous
+void Auton2() {
 
-   //Chassis position: coordinate from the back of the drivetrain 
-   //Chassis heading: front intake is direction
+  pros::delay(5000);
+  // Autonomous winpoint blue negative side / red negative side
 
-   // Step 1. We start under the red alliance stake. 
-   // With the preloaded ring, we will score on the stake using our wall stake mechanism.
+  // score on alliance stake
 
-   chassis.setPose(-165, 0, 90, false);
-   intake_score(1000,1);
-   // -- TODO: Score on the red alliance stake
+  chassis.setPose(-60, 24, 180);
+  chassis.moveToPose(-60, 0, 180, 5000);
+  chassis.turnToHeading(90, 1000);
+  chassis.moveToPoint(-65, 0, 1000, {.forwards = false});
+  intake_score(2000, 1);
 
-   // Step 2. We will go to pick up the top left mobile goal 
-   // with our clamp facing into the mobile goal.
+  // pick up ring and score
 
-   chassis.turnToHeading(180, 5000, {}, false);
+  chassis.setPose(-62, 0, 90, false);
+  intake_on(600);
+  chassis.moveToPose(-24, 48, 45, 2700, {}, false);
+  intake_off();
 
-   chassis.moveToPoint(-120, 60, 5000, {.forwards=true}, false);
-   pros::delay(200);
+  clamp.toggle();
+  chassis.turnToHeading(0, 2000);
+  chassis.moveToPoint(-24, 22, 5000, {.forwards = false, .maxSpeed = 25},
+                      false);
+  clamp.toggle();
 
-   clamp.toggle();
+  pros::delay(500);
+  intake_score(1000, 1);
 
-   // Step 3. We will go and score the 6 rings around the mobile goal onto our robot. 
-   // This will take a lot of precise coding and movement to nail autonomously
-
-   intake_score(1000,1);
-
-   // -- Score bottom right ring (1)
-
-   chassis.turnToHeading(90, 5000, {}, false);
-
-   chassis.moveToPoint(-60, 60, 5000, {.forwards=true}, false);
-   pros::delay(200);
-
-   // -- Score second top ring (2)
-
-   chassis.turnToHeading(0, 5000, {}, false);
-
-   chassis.moveToPoint(-60, 120, 5000, {.forwards=true}, false);
-   pros::delay(200);
-
-   // -- Score center top ring (3)
-
-   chassis.turnToHeading(90, 5000, {}, false);
-
-   chassis.moveToPoint(0, 150, 5000, {.forwards=true}, false);
-   pros::delay(200);
-
-   // -- Score corner center ring (4)
-
-   chassis.turnToHeading(270, 5000, {}, false);
-
-   chassis.moveToPoint(-120, 120, 5000, {.forwards=true}, false);
-   pros::delay(200);
-
-   // -- Score corner back left ring (5)
-
-   chassis.moveToPoint(-150, 120, 5000, {.forwards=true}, false);
-   pros::delay(200);
-
-   // -- Score corner top ring (6)
-
-   chassis.moveToPoint(-120, 150, 5000, {.forwards=true}, false);
-   pros::delay(200);
-
-   // Step 4. We will go and put the fully scored out mobile goal into the top right corner to double its points.
-
-   chassis.moveToPose(-168, -168, 135, 5000, {.forwards=false}, false);
-   pros::delay(200);
-
-   clamp.toggle();
-
-   // Step 5. We will go to the center, and pick up the center ring on our robot. 
-   // This will later be used to score on the bottom right mobile goal.
-
-   chassis.moveToPose(0, 0, 0, 5000, {.forwards=true}, false);
-   pros::delay(500);
-   intake_score(1000,1);
-
-   // Step 6. We will pick up the bottom right’s mobile goal to score more rings onto.
-
-   chassis.moveToPose(-120, 60, 45, 5000, {.forwards=false}, false);
-
-   clamp.toggle();
-
-   // Step 7. We will pick up all of the rings in the bottom right corner. 
-   // This will required high precision and a well-tuned autonomous to accomplish quickly.
-
-   // -- Pick up the top right ring (2)
-
-   intake_score(1000,1);
-
-   chassis.moveToPose(-60, -60, 135, 5000, {.forwards=true}, false);
-   pros::delay(200);
-
-   // -- Pick up the bottom right ring (3)
-
-   chassis.moveToPose(-60, -120, 180, 5000, {.forwards=true}, false);
-   pros::delay(200);
-
-   // -- Pick up the middle ring (4)
-   chassis.moveToPose(-120, -120, 270, 5000, {.forwards=true}, false);
-   pros::delay(200);
-
-   // -- Pick up a ring (5)
-   chassis.moveToPose(-150, -120, 270, 5000, {.forwards=true}, false);
-   pros::delay(200);
-
-   // -- Pick up last ring (6)
-   chassis.moveToPose(-120, -150, 135, 5000, {.forwards=true}, false);
-   pros::delay(200);
-
-   // Step 8. We will put the mobile goal into the positive corner at the bottom right. 
-   // This will double all of the points on our current mobile goal.
-
-   chassis.moveToPose(-166, -166, 45, 5000, {.forwards=false}, false);
-
-   // Step 9. Move to the center line, and pick up a ring, then turn around and score it on the high stakes.
-
-   chassis.moveToPose(0, -150, 90, 5000, {.forwards=true}, false);
-   //TODO: SCORE RING ON HIGH STAKE
-
-   //Step 10. We will go to the center bar and hang
-   chassis.moveToPose(-25, -40, 45, 5000, {.forwards=true}, false);
-   //TODO: TOGGLE HANG MECHANISM
+  chassis.turnToHeading(180, 1000);
+  chassis.moveToPoint(-20, 2, 5000, {.forwards = true}, false);
 }
 
-void skillsAuto(){
-  chassis.setPose(-62,0,0); //starting position infront of red stake
-  lady_brown.move_absolute(120, 200); //score allliance stake
-  lady_brown.move_absolute(0, 60);
-  chassis.moveToPose(-53,20,30, 2000, {.forwards=false}, false);
-  clamp.extend(); //clamp goal
-  intake.move_velocity(200);
-  chassis.moveToPose(-59,45,90, 2000, {.forwards=true}, false);
-  chassis.moveToPose(-49,47,0, 2000, {.forwards=true}, false);
-  chassis.moveToPose(-47,57,90, 2000, {.forwards=true}, false);
-  intake.move_velocity(0);
-  chassis.moveToPose(-66,65,135, 2000, {.forwards=false}, false); //pick up 3 rings and drop off goal
+void Auton3() {
+  chassis.setPose(0, 0, 0, false);
+  chassis.moveToPose(0, -35, 0, 2700, {.forwards = false, .maxSpeed = 30},
+                     false);
+  clamp.toggle();
+  intake_score(1000, 1);
+}
+
+void Auton5() {
+  // Skills challenge autonomous
+
+  // Chassis position: coordinate from the back of the drivetrain
+  // Chassis heading: front intake is direction
+
+  // Step 1. We start under the red alliance stake.
+  // With the preloaded ring, we will score on the stake using our wall stake
+  // mechanism.
+
+  chassis.setPose(-165, 0, 90, false);
+  intake_score(1000, 1);
+  // -- TODO: Score on the red alliance stake
+
+  // Step 2. We will go to pick up the top left mobile goal
+  // with our clamp facing into the mobile goal.
+
+  chassis.turnToHeading(180, 5000, {}, false);
+
+  chassis.moveToPoint(-120, 60, 5000, {.forwards = true}, false);
+  pros::delay(200);
+
+  clamp.toggle();
+
+  // Step 3. We will go and score the 6 rings around the mobile goal onto our
+  // robot. This will take a lot of precise coding and movement to nail
+  // autonomously
+
+  intake_score(1000, 1);
+
+  // -- Score bottom right ring (1)
+
+  chassis.turnToHeading(90, 5000, {}, false);
+
+  chassis.moveToPoint(-60, 60, 5000, {.forwards = true}, false);
+  pros::delay(200);
+
+  // -- Score second top ring (2)
+
+  chassis.turnToHeading(0, 5000, {}, false);
+
+  chassis.moveToPoint(-60, 120, 5000, {.forwards = true}, false);
+  pros::delay(200);
+
+  // -- Score center top ring (3)
+
+  chassis.turnToHeading(90, 5000, {}, false);
+
+  chassis.moveToPoint(0, 150, 5000, {.forwards = true}, false);
+  pros::delay(200);
+
+  // -- Score corner center ring (4)
+
+  chassis.turnToHeading(270, 5000, {}, false);
+
+  chassis.moveToPoint(-120, 120, 5000, {.forwards = true}, false);
+  pros::delay(200);
+
+  // -- Score corner back left ring (5)
+
+  chassis.moveToPoint(-150, 120, 5000, {.forwards = true}, false);
+  pros::delay(200);
+
+  // -- Score corner top ring (6)
+
+  chassis.moveToPoint(-120, 150, 5000, {.forwards = true}, false);
+  pros::delay(200);
+
+  // Step 4. We will go and put the fully scored out mobile goal into the top
+  // right corner to double its points.
+
+  chassis.moveToPose(-168, -168, 135, 5000, {.forwards = false}, false);
+  pros::delay(200);
+
+  clamp.toggle();
+
+  // Step 5. We will go to the center, and pick up the center ring on our robot.
+  // This will later be used to score on the bottom right mobile goal.
+
+  chassis.moveToPose(0, 0, 0, 5000, {.forwards = true}, false);
+  pros::delay(500);
+  intake_score(1000, 1);
+
+  // Step 6. We will pick up the bottom right’s mobile goal to score more rings
+  // onto.
+
+  chassis.moveToPose(-120, 60, 45, 5000, {.forwards = false}, false);
+
+  clamp.toggle();
+
+  // Step 7. We will pick up all of the rings in the bottom right corner.
+  // This will required high precision and a well-tuned autonomous to accomplish
+  // quickly.
+
+  // -- Pick up the top right ring (2)
+
+  intake_score(1000, 1);
+
+  chassis.moveToPose(-60, -60, 135, 5000, {.forwards = true}, false);
+  pros::delay(200);
+
+  // -- Pick up the bottom right ring (3)
+
+  chassis.moveToPose(-60, -120, 180, 5000, {.forwards = true}, false);
+  pros::delay(200);
+
+  // -- Pick up the middle ring (4)
+  chassis.moveToPose(-120, -120, 270, 5000, {.forwards = true}, false);
+  pros::delay(200);
+
+  // -- Pick up a ring (5)
+  chassis.moveToPose(-150, -120, 270, 5000, {.forwards = true}, false);
+  pros::delay(200);
+
+  // -- Pick up last ring (6)
+  chassis.moveToPose(-120, -150, 135, 5000, {.forwards = true}, false);
+  pros::delay(200);
+
+  // Step 8. We will put the mobile goal into the positive corner at the bottom
+  // right. This will double all of the points on our current mobile goal.
+
+  chassis.moveToPose(-166, -166, 45, 5000, {.forwards = false}, false);
+
+  // Step 9. Move to the center line, and pick up a ring, then turn around and
+  // score it on the high stakes.
+
+  chassis.moveToPose(0, -150, 90, 5000, {.forwards = true}, false);
+  // TODO: SCORE RING ON HIGH STAKE
+
+  // Step 10. We will go to the center bar and hang
+  chassis.moveToPose(-25, -40, 45, 5000, {.forwards = true}, false);
+  // TODO: TOGGLE HANG MECHANISM
+}
+
+void skillsAuto() {
+  chassis.setPose(-60, 0, 90, false); // starting position infront of red stake
+  chassis.moveToPoint(-46, 0, 1000);
+  chassis.moveToPoint(-46, 10, 900, {.forwards = false}, false);
+  chassis.moveToPoint(-46, 17, 1000, {.forwards = false}, false);
+  clamp.extend();
+  pros::delay(500);
+
+  chassis.turnToHeading(0, 2000, {.earlyExitRange = .1});
+  intake.move_velocity(600);
+  chassis.moveToPoint(-46.5, 60, 5000, {.maxSpeed = 40}, false);
+  chassis.turnToHeading(90, 2000, {.earlyExitRange = .1}, false);
+  chassis.moveToPoint(-60, 60, 2000, {.forwards = false}, false);
   clamp.retract();
-  chassis.moveToPose(-47,-20,90, 2000, {.forwards=false}, false);
+  intake.brake();
 
+  chassis.turnToHeading(120, 200);
+  chassis.turnToHeading(90, 500);
 
+  chassis.moveToPose(-47, -16, 180, 2500, {.forwards = false});
 
+  // chassis.moveToPoint(-46.5, 60, 2000, {.forwards=true}, false);
+  // chassis.turnToHeading(0, 2000);
 
-
-
-
-  
-
-
-
-
-
-
+  // chassis.moveToPoint(-46, -10, 1000, {.forwards=false, .maxSpeed=60},
+  // false); pros::delay(500); chassis.moveToPoint(-46, -17, 1000,
+  // {.forwards=false}, false); clamp.extend(); pros::delay(500);
 }
 
-void autonomous() {
-  Auton2();
+void x() {
+  chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+  chassis.setPose(0, 0, 0);
+  chassis.moveToPoint(0, 12, 800);
+  chassis.turnToPoint(19, 12, 650, {.forwards = false});
+  chassis.moveToPoint(16.5, 12, 850, {.forwards = false, .earlyExitRange = 2},
+                      false);
+  chassis.moveToPoint(19, 12, 550, {.forwards = false, .maxSpeed = 63}, false);
+
+  // Latch the mogo - delays just in case
+  clamp.extend();
+  pros::delay(250);
+
+  // Turn to the above ring - Start intake and hook, and move there
+  chassis.turnToPoint(24, 36.75, 850, {}, false);
+  intake.move_velocity(600);
+  chassis.moveToPoint(24, 36.75, 1000, {}, false);
+
+  chassis.turnToPoint(48, 36.75, 850, {}, false);
+  chassis.moveToPoint(48, 36.75, 1000, {.maxSpeed=40}, false);
+  pros::delay(750);
+
+  chassis.turnToPoint(45, -35, 850, {.maxSpeed=40}, false);
+  chassis.moveToPoint(45, -38, 1000, {.maxSpeed=50}, false);
+
+  pros::delay(3000);
+
+  chassis.turnToPoint(50, -37, 850, {.forwards=false});
+  chassis.moveToPoint(50, -37, 1000, {.forwards=false, .maxSpeed=40}, false);
+  clamp.retract();
+
+  // chassis.turnToPoint(-24, 12, 850, {.forwards = false});
+  // chassis.moveToPoint(-24, 8, 3000, {.forwards = false}, false);
+  // chassis.moveToPoint(-24, 12, 3000, {.forwards = false}, false);
+
+  // clamp.extend();
+
+  pros::delay(20000);
 }
+void autonomous() { x(); }
 
 /**
  * Runs the operator control code. This function will be started in its own task
@@ -451,6 +498,8 @@ void autonomous() {
  * task, not resume it from where it left off.
  */
 void opcontrol() {
+  autonomous();
+  chassis.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
   auto start_time = std::chrono::steady_clock::now();
   bool flagged = false;
   lady_brown.move_absolute(0, 200);
@@ -485,8 +534,7 @@ void opcontrol() {
     } else {
       intake.brake();
     }
-    if (
-        controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) {
+    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) {
       clamp.toggle();
     }
 
@@ -500,13 +548,13 @@ void opcontrol() {
 
       case PRIMED:
         lady_brown.move_absolute(350, 100); // Maintain primed position
-        intake.move_velocity(0);           // Stop intake
+        intake.move_velocity(0);            // Stop intake
         ladyBrownState = SCORING;
         break;
 
-      case SCORING: 
+      case SCORING:
         lady_brown.move_absolute(390, 75); // Move to scoring position
-        ladyBrownState = SCORED;             // Reset state
+        ladyBrownState = SCORED;           // Reset state
         break;
 
       case SCORED:
