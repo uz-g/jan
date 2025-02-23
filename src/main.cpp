@@ -191,9 +191,8 @@ void competition_initialize() {}
  * from where it left off.
  */
 
-void intake_score(int delay, int direction) {
-  intake.move_velocity(600 * direction);
-  pros::delay(delay);
+void intake_score(int degrees, int direction) {
+  intake.move_relative(degrees, 600*direction);
   intake.brake();
 }
 
@@ -209,7 +208,6 @@ void intake_on(int speed) {
 void intake_off() { intake_on(0); }
 
 void Auton1() {
-  pros::delay(5000);
   // Autonomous winpoint blue positive side / red positive side
 
   // score on alliance stake
@@ -275,10 +273,10 @@ void Auton2() {
 
 void Auton3() {
   chassis.setPose(0, 0, 0, false);
-  chassis.moveToPose(0, -35, 0, 2700, {.forwards = false, .maxSpeed = 30},
+  chassis.moveToPose(0, -36, 0, 2700, {.forwards = false, .maxSpeed = 70},
                      false);
-  clamp.toggle();
-  intake_score(1000, 1);
+  clamp.extend();
+  intake.move_velocity(600);
 }
 
 void Auton5() {
@@ -489,42 +487,40 @@ void x() {
   intake.move_voltage(0);
   pros::delay(500);
   intake.move_velocity(600);
-  chassis.turnToPoint(-29.8,37,1000,{.maxSpeed=40},false);
+  chassis.turnToPoint(-29.8,37,1000,{},false);
   pros::delay(1000);
-  chassis.moveToPoint(-29.8,37,1000,{.maxSpeed=40},false);
+  chassis.moveToPoint(-29.8,37,1000,{.maxSpeed=50},false);
   pros::delay(1000);
-  chassis.turnToPoint(-53.8,37,1000,{.maxSpeed=40},false);
+  chassis.turnToPoint(-53.8,37,1000,{},false);
   pros::delay(1000);
-  chassis.moveToPoint(-53.8,37,1000,{.maxSpeed=40},false);
+  chassis.moveToPoint(-53.8,37,1000,{.maxSpeed=50},false);
   pros::delay(1000);
-  chassis.moveToPoint(-53.8,5,1000,{.maxSpeed=40},false);
+  chassis.moveToPoint(-53.8,5,1000,{.maxSpeed=50},false);
   pros::delay(1000);
-  chassis.turnToPoint(-50.5,6,1000,{.maxSpeed=40},true);
-  chassis.moveToPoint(-50.5,6,1000,{.maxSpeed=40},true);
+  chassis.turnToPoint(-50.5,6,1000,{},true);
+  chassis.moveToPoint(-50.5,6,1000,{.maxSpeed=50},true);
   pros::delay(1000);
-  chassis.turnToPoint(-39.5,7,1000,{.maxSpeed=40},true);
-  chassis.moveToPoint(-39.5,7,1000,{.maxSpeed=40},true);
-  pros::delay(1000);
-  chassis.turnToPoint(-67,2.78,1000,{.forwards=false,.maxSpeed=40},false);
-  chassis.moveToPoint(-67,2.78,1000,{.forwards=false,.maxSpeed=40},false);
+  chassis.turnToPoint(-39.5,7,1000,{},true);
+  chassis.moveToPoint(-39.5,7,1000,{.maxSpeed=50},false);
+  chassis.turnToPoint(-67,0,1000,{.forwards=false},false);
+  chassis.moveToPoint(-67,0,1000,{.forwards=false,.maxSpeed=50},false);
   clamp.retract();
   intake.move_voltage(-12000);
   pros::delay(200); // Move at max voltage for 1 second
   intake.move_voltage(0);
   pros::delay(500);
-  chassis.turnToPoint(-3,62,3000,{.forwards=true,.maxSpeed=70},false);
+  chassis.turnToPoint(-3,62,3000,{.forwards=true,.maxSpeed=90},false);
   pros::delay(1000);
-  chassis.moveToPoint(-3,62,3000,{.forwards=true,.maxSpeed=70},true);
+  chassis.moveToPoint(-3,62,2000,{.forwards=true,.maxSpeed=70},false);
   // tune this delay
-  pros::delay(1500);
   intake.move_voltage(12000);
   pros::delay(600); // Move at max voltage for 1 second
   intake.move_voltage(0);
   pros::delay(500);
   chassis.moveToPoint(45,104,3000,{.forwards=true,.maxSpeed=70},false);
   pros::delay(1000);
-  chassis.turnToPoint(-25,108,5000,{.forwards=false,.maxSpeed=40},false);
-  chassis.moveToPoint(-25,108,5000,{.forwards=false,.maxSpeed=40},false);
+  chassis.turnToPoint(-25,108,5000,{.forwards=false},false);
+  chassis.moveToPoint(-25,108,5000,{.forwards=false,.maxSpeed=70},false);
   clamp.extend();
   intake.move_velocity(600);
   chassis.moveToPoint(-64.5,131.1,2000,{.forwards=false},false);
@@ -535,27 +531,14 @@ void x() {
   pros::delay(200); // Move at max voltage for 1 second
   intake.move_voltage(0);
   chassis.moveToPoint(0,120,2000,{.forwards=true},false);
-  // -3.8,102.14
-  // Second half of auton
-  // -55,15 -67,2.78
-
-  // Tries to score goal in corner
-  //chassis.turnToPoint(50, -37, 850, {.forwards=false});
-  //chassis.moveToPoint(50, -37, 1000, {.forwards=false, .maxSpeed=40}, false);
-  //clamp.retract();
-
-  // chassis.turnToPoint(-24, 12, 850, {.forwards = false});
-  // chassis.moveToPoint(-24, 8, 3000, {.forwards = false}, false);
-  // chassis.moveToPoint(-24, 12, 3000, {.forwards = false}, false);
-
-  // clamp.extend();
-  
+  chassis.moveToPoint(-64.5,131.1,700,{.forwards=true},false);
 
  
 }
 
 void autonomous() { 
-  x(); 
+  // x();
+  Auton3(); 
   }
 
 /**
@@ -620,13 +603,13 @@ void opcontrol() {
         break;
 
       case PRIMED:
-        lady_brown.move_absolute(370, 100); // Maintain primed position
+        lady_brown.move_absolute(420, 100); // Maintain primed position
         intake.move_velocity(0);            // Stop intake
         ladyBrownState = SCORED;
         break;
 
       case SCORED:
-        lady_brown.move_absolute(420, 80); // Move to scoring position
+        lady_brown.move_absolute(0, 80); // Move to scoring position
         ladyBrownState = IDLE;
         break;
       }
