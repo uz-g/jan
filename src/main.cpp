@@ -548,7 +548,7 @@ void x() {
 
 void autonomous() {
   // x();
-  match2();
+  Auton3();
 }
 
 /**
@@ -613,7 +613,7 @@ void opcontrol() {
         break;
 
       case PRIMED:
-        lady_brown.move_absolute(460, 100); // Maintain primed position
+        lady_brown.move_absolute(460, 200); // Maintain primed position
         intake.move_velocity(0);            // Stop intake
         ladyBrownState = SCORED;
         break;
