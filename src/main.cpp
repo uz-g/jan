@@ -3,16 +3,20 @@
 #include "lemlib/api.hpp"
 #include "lemlib/chassis/chassis.hpp"
 #include "liblvgl/lvgl.h"
-#include "main.h"
 #include "pros/distance.hpp"
 #include "pros/motors.h"
 #include "pros/motors.hpp"
 #include "pros/rtos.hpp"
+#include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <random>
-#include <cmath>
+#include <vector>
 
 using namespace lemlib;
+
+pros::Task *mcl_update_task_handle = nullptr; // Task handle
+bool mcl_running = true;                      // Control flag
 
 pros::MotorGroup dt_left({-5, 2, -9}, pros::v5::MotorGears::blue,
                          pros::v5::MotorUnits::degrees);
@@ -25,8 +29,10 @@ pros::MotorGroup intake({11, 20}, pros::v5::MotorGears::blue,
                         pros::v5::MotorUnits::degrees);
 pros::Motor preroller(20, pros::v5::MotorGears::green,
                       pros::v5::MotorUnits::degrees); // intake motor on port 9
+
+pros::Motor hooks(11, pros::v5::MotorGears::blue,
+                  pros::v5::MotorUnits::degrees);
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
-;
 
 pros::Imu imu(8);
 
@@ -115,7 +121,8 @@ const double LADDER_THICKNESS = 1.0;   // inches
 const double MOGO_THICKNESS = 1.5;     // inches
 const double MIN_VALID_DISTANCE = 2.0; // minimum valid distance reading
 const double MAX_VALID_DISTANCE = 118.0;
-const double SENSOR_STD_DEV = 25.0;    // standard deviation for sensor measurements in mm
+const double SENSOR_STD_DEV =
+    25.0; // standard deviation for sensor measurements in mm
 
 struct Particle {
   double x;
@@ -125,64 +132,71 @@ struct Particle {
 
 std::vector<Particle> particles(100); // Create 100 particles for the filter
 
-
 // Normal distribution probability density function
 double normal_pdf(double x, double mean, double std_dev) {
-    double diff = x - mean;
-    return (1.0 / (std_dev * sqrt(2.0 * M_PI))) * 
-           exp(-0.5 * (diff * diff) / (std_dev * std_dev));
+  double diff = x - mean;
+  return (1.0 / (std_dev * sqrt(2.0 * M_PI))) *
+         exp(-0.5 * (diff * diff) / (std_dev * std_dev));
 }
 
 // Modify the FilteredPose struct and add noise parameters
 struct FilteredPose {
-    double x;
-    double y;
-    static constexpr double drive_noise = 0.1;  // adjust these values
-    static constexpr double angle_noise = 0.05; // based on your robot
+  double x;
+  double y;
+  static constexpr double drive_noise = 0.1;  // adjust these values
+  static constexpr double angle_noise = 0.05; // based on your robot
 };
 
 // Update getFilteredPosition to use proper noise model
 FilteredPose getFilteredPosition() {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    
-    double theta = chassis.getPose().theta * M_PI / 180.0;
-    double current_x = chassis.getPose().x;
-    double current_y = chassis.getPose().y;
+  static std::random_device rd;
+  static std::mt19937 gen(rd());
 
-    // Create normal distributions for noise
-    std::normal_distribution<> angle_noise(0, FilteredPose::angle_noise);
-    std::normal_distribution<> pos_noise(0, FilteredPose::drive_noise);
+  double theta = chassis.getPose().theta * M_PI / 180.0;
+  double current_x = chassis.getPose().x;
+  double current_y = chassis.getPose().y;
 
-    double total_weight = 0;
-    for (auto &p : particles) {
-        // Add noise to position estimates
-        p.x = current_x + pos_noise(gen);
-        p.y = current_y + pos_noise(gen);
-        
-        // Only use south sensor as requested
-        double expected_south = p.y * cos(theta + angle_noise(gen)) + 
-                              p.x * sin(theta + angle_noise(gen));
-        
-        // Calculate weight using proper probability density
-        p.weight = normal_pdf(dSouth.get(), expected_south, SENSOR_STD_DEV);
-        total_weight += p.weight;
+  // Create normal distributions for noise
+  std::normal_distribution<> angle_noise(0, FilteredPose::angle_noise);
+  std::normal_distribution<> pos_noise(0, FilteredPose::drive_noise);
+
+  double total_weight = 0;
+  for (auto &p : particles) {
+    // Add noise to position estimates
+    p.x = current_x + pos_noise(gen);
+    p.y = current_y + pos_noise(gen);
+
+    // Only use south sensor as requested
+    double expected_south = p.y * cos(theta + angle_noise(gen)) +
+                            p.x * sin(theta + angle_noise(gen));
+
+    // Calculate weight using proper probability density
+    p.weight = normal_pdf(dSouth.get(), expected_south, SENSOR_STD_DEV);
+    total_weight += p.weight;
+  }
+
+  // Rest of the function remains the same
+  double filtered_x = 0, filtered_y = 0;
+  if (total_weight > 0) {
+    for (const auto &p : particles) {
+      double normalized_weight = p.weight / total_weight;
+      filtered_x += p.x * normalized_weight;
+      filtered_y += p.y * normalized_weight;
     }
+  } else {
+    filtered_x = current_x;
+    filtered_y = current_y;
+  }
 
-    // Rest of the function remains the same
-    double filtered_x = 0, filtered_y = 0;
-    if (total_weight > 0) {
-        for (const auto &p : particles) {
-            double normalized_weight = p.weight / total_weight;
-            filtered_x += p.x * normalized_weight;
-            filtered_y += p.y * normalized_weight;
-        }
-    } else {
-        filtered_x = current_x;
-        filtered_y = current_y;
-    }
+  return {filtered_x, filtered_y};
+}
 
-    return {filtered_x, filtered_y};
+void mcl_update_task(void *param) {
+  while (mcl_running) {
+    auto filtered_pose = getFilteredPosition();
+    chassis.setPose(filtered_pose.x, filtered_pose.y, chassis.getPose().theta);
+    pros::delay(50); // Update at 20Hz
+  }
 }
 
 /**
@@ -213,7 +227,6 @@ void initialize() {
   chassis.setPose(0, 0, 0);
 
   lady_brown.set_zero_position_all(0);
-  
 
   // the default rate is 50. however, if you need to change the rate, you
   // can do the following.
@@ -254,6 +267,13 @@ void disabled() {
   dt_right.move_velocity(0);
   intake.move_velocity(0);
   lady_brown.move_velocity(0);
+
+  if (mcl_update_task_handle != nullptr) {
+    mcl_running = false;
+    mcl_update_task_handle->remove();
+    delete mcl_update_task_handle;
+    mcl_update_task_handle = nullptr;
+  }
 }
 
 /**
@@ -638,10 +658,18 @@ void skills() {
   chassis.setPose(-60, 0, 90);
   chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
 
-  chassis.setPose(getFilteredPosition().x, getFilteredPosition().y,
-                  chassis.getPose().theta); //set absolute pose
+  if (mcl_update_task_handle != nullptr) {
+    mcl_running = false;
+    mcl_update_task_handle->remove();
+    delete mcl_update_task_handle;
+    mcl_update_task_handle = nullptr;
+  }
+  mcl_running = true;
+  mcl_update_task_handle =
+      new pros::Task(mcl_update_task, nullptr, TASK_PRIORITY_DEFAULT,
+                     TASK_STACK_DEPTH_DEFAULT, "MCL Update Task");
 
-
+  hooks.move_relative(3000, 600);
 }
 void autonomous() {
   // x();
