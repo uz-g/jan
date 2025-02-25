@@ -4,10 +4,13 @@
 #include "lemlib/chassis/chassis.hpp"
 #include "liblvgl/lvgl.h"
 #include "main.h"
+#include "pros/distance.hpp"
 #include "pros/motors.h"
 #include "pros/motors.hpp"
 #include "pros/rtos.hpp"
 #include <iostream>
+#include <random>
+#include <cmath>
 
 using namespace lemlib;
 
@@ -62,7 +65,7 @@ lemlib::ControllerSettings
                       100, // small error range timeout, in milliseconds
                       3,   // large error range, in degrees
                       500, // large error range timeout, in milliseconds
-                      0    // maximum acceleration (slew)
+                      30   // maximum acceleration (slew)
     );
 
 // Create a new rotation sensor on port 11 (adjust the port number as needed)
@@ -73,7 +76,6 @@ pros::Rotation horizontalRotation(10);
 lemlib::TrackingWheel horizontal1(&horizontalRotation, lemlib::Omniwheel::NEW_2,
                                   0.5);
 
-// Update the OdomSensors object to include the new horizontal tracking wheel
 lemlib::OdomSensors sensors(nullptr, // vertical tracking wheel
                             nullptr, // vertical tracking wheel 2, set to
                                      // nullptr as we don't have a second one
@@ -101,6 +103,91 @@ lemlib::ExpoDriveCurve
 lemlib::Chassis chassis(drivetrain, linearController, angularController,
                         sensors, &throttleCurve, &steerCurve);
 
+// attempt to get mcl working
+
+// MONTE
+pros::Distance dNorth(3);
+pros::Distance dEast(7);
+pros::Distance dSouth(10);
+pros::Distance dWest(4);
+
+const double LADDER_THICKNESS = 1.0;   // inches
+const double MOGO_THICKNESS = 1.5;     // inches
+const double MIN_VALID_DISTANCE = 2.0; // minimum valid distance reading
+const double MAX_VALID_DISTANCE = 118.0;
+
+struct Particle {
+  double x;
+  double y;
+  double weight;
+};
+
+std::vector<Particle> particles(100); // Create 100 particles for the filter
+
+struct FilteredPose {
+  double x; 
+  double y;
+};
+
+// Normal distribution probability density function
+double normal_pdf(double x, double mean, double std_dev) {
+    double diff = x - mean;
+    return (1.0 / (std_dev * sqrt(2.0 * M_PI))) * 
+           exp(-0.5 * (diff * diff) / (std_dev * std_dev));
+}
+
+// Modify the FilteredPose struct and add noise parameters
+struct FilteredPose {
+    double x;
+    double y;
+    static constexpr double drive_noise = 0.1;  // adjust these values
+    static constexpr double angle_noise = 0.05; // based on your robot
+};
+
+// Update getFilteredPosition to use proper noise model
+FilteredPose getFilteredPosition() {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    
+    double theta = chassis.getPose().theta * M_PI / 180.0;
+    double current_x = chassis.getPose().x;
+    double current_y = chassis.getPose().y;
+
+    // Create normal distributions for noise
+    std::normal_distribution<> angle_noise(0, FilteredPose::angle_noise);
+    std::normal_distribution<> pos_noise(0, FilteredPose::drive_noise);
+
+    double total_weight = 0;
+    for (auto &p : particles) {
+        // Add noise to position estimates
+        p.x = current_x + pos_noise(gen);
+        p.y = current_y + pos_noise(gen);
+        
+        // Only use south sensor as requested
+        double expected_south = p.y * cos(theta + angle_noise(gen)) + 
+                              p.x * sin(theta + angle_noise(gen));
+        
+        // Calculate weight using proper probability density
+        p.weight = normal_pdf(dSouth.get(), expected_south, SENSOR_STD_DEV);
+        total_weight += p.weight;
+    }
+
+    // Rest of the function remains the same
+    double filtered_x = 0, filtered_y = 0;
+    if (total_weight > 0) {
+        for (const auto &p : particles) {
+            double normalized_weight = p.weight / total_weight;
+            filtered_x += p.x * normalized_weight;
+            filtered_y += p.y * normalized_weight;
+        }
+    } else {
+        filtered_x = current_x;
+        filtered_y = current_y;
+    }
+
+    return {filtered_x, filtered_y};
+}
+
 /**
  * A callback function for LLEMU's center button.
  *
@@ -127,7 +214,9 @@ void initialize() {
   pros::lcd::initialize(); // initialize brain screen
   chassis.calibrate();     // calibrate sensors
   chassis.setPose(0, 0, 0);
+
   lady_brown.set_zero_position_all(0);
+  
 
   // the default rate is 50. however, if you need to change the rate, you
   // can do the following.
@@ -147,7 +236,9 @@ void initialize() {
       pros::lcd::print(2, "Theta: %f", chassis.getPose().theta); // heading
       pros::lcd::print(3, "LB Deg: %f", lady_brown.get_position());
       // log position telemetry
-      lemlib::telemetrySink()->info("Chassis pose: {}", chassis.getPose());
+      auto filtered_pose = getFilteredPosition();
+      pros::lcd::print(5, "Filtered X:%.1f Y:%.1f", filtered_pose.x,
+                       filtered_pose.y);
       // delay to save resources
       pros::delay(50);
     }
@@ -436,7 +527,7 @@ void match1() {
 }
 
 void match2() {
-  //red neg
+  // red neg
 
   chassis.setPose(0, 0, 0, false);
   chassis.moveToPose(0, -36, 0, 2700, {.forwards = false, .maxSpeed = 70},
@@ -452,7 +543,7 @@ void match2() {
 
 void x() {
   chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-  chassis.setPose(0, 0, 0);
+  chassis.setPose(0, 0, 0); // relatice movements
   chassis.moveToPoint(0, 12, 800);
   chassis.turnToPoint(19, 12, 650, {.forwards = false});
   chassis.moveToPoint(16.5, 12, 850, {.forwards = false, .earlyExitRange = 2},
@@ -546,9 +637,19 @@ void x() {
   chassis.moveToPoint(-64.5, 131.1, 700, {.forwards = true}, false);
 }
 
+void skills() {
+  chassis.setPose(-60, 0, 90);
+  chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+
+  chassis.setPose(getFilteredPosition().x, getFilteredPosition().y,
+                  chassis.getPose().theta); //set absolute pose
+
+
+}
 void autonomous() {
   // x();
-  Auton3();
+  // Auton3();
+  skills();
 }
 
 /**
