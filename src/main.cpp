@@ -115,6 +115,7 @@ const double LADDER_THICKNESS = 1.0;   // inches
 const double MOGO_THICKNESS = 1.5;     // inches
 const double MIN_VALID_DISTANCE = 2.0; // minimum valid distance reading
 const double MAX_VALID_DISTANCE = 118.0;
+const double SENSOR_STD_DEV = 25.0;    // standard deviation for sensor measurements in mm
 
 struct Particle {
   double x;
@@ -124,10 +125,6 @@ struct Particle {
 
 std::vector<Particle> particles(100); // Create 100 particles for the filter
 
-struct FilteredPose {
-  double x; 
-  double y;
-};
 
 // Normal distribution probability density function
 double normal_pdf(double x, double mean, double std_dev) {
